@@ -1,0 +1,81 @@
+name: Build
+on: workflow_dispatch
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows
+            cmd: |
+              git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git --depth 1
+              $env:Path="$pwd/depot_tools;$env:Path"
+              $env:DEPOT_TOOLS_WIN_TOOLCHAIN=0
+              $env:GYP_MSVS_OVERRIDE_PATH="C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+              $env:WINDOWSSDKDIR="C:\Program Files (x86)\Windows Kits\10"
+              gclient sync --no-history
+              cd src/flutter/third_party/dart
+              git apply ../../../../0001-Update.patch --ignore-space-change --ignore-whitespace
+              cd ../../..
+              ./flutter/tools/gn --runtime-mode release --no-enable-unittests --disable-desktop-embeddings --no-prebuilt-dart-sdk --enable-vulkan
+              ninja -C out/host_release -j8
+              cp ./out/host_release/flutter_minecraft.dll ../flutter_minecraft.dll
+
+          - os: ubuntu-latest
+            name: Linux
+            cmd: |
+              git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git --depth 1
+              export PATH=$(pwd)/depot_tools:$PATH
+              gclient sync --no-history
+              cd src
+              ./flutter/tools/gn --runtime-mode release --no-enable-unittests --disable-desktop-embeddings --enable-vulkan
+              ninja -C out/host_release -j8
+              cp ./out/host_release/libflutter_minecraft.so ../libflutter_minecraft.so
+
+          - os: macos-14
+            name: MacOS
+            cmd: |
+              git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git --depth 1
+              export PATH=$(pwd)/depot_tools:$PATH
+              gclient sync --no-history
+              cd src
+              cd flutter
+              git apply ../../0002-Update.patch
+              cd ..
+              ./flutter/tools/gn --runtime-mode release --no-enable-unittests --disable-desktop-embeddings --enable-vulkan
+              ninja -C out/host_release -j8
+              cp ./out/host_release/libflutter_minecraft.dylib ../libflutter_minecraft.dylib
+
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build
+        run: |
+          ${{ matrix.cmd }}
+
+      - name: Upload Artifacts (Linux)
+        uses: actions/upload-artifact@v3
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: libs
+          path: ./libflutter_minecraft.so
+
+      - name: Upload Artifacts (Windows)
+        uses: actions/upload-artifact@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          name: libs
+          path: ./flutter_minecraft.dll
+
+      - name: Upload Artifacts (MacOS)
+        uses: actions/upload-artifact@v3
+        if: matrix.os == 'macos-14'
+        with:
+          name: libs
+          path: ./libflutter_minecraft.dylib

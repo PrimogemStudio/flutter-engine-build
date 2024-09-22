@@ -1,0 +1,73 @@
+From e87bd2a1914f9ffb0bfa10c62fd63bf4dbed45d5 Mon Sep 17 00:00:00 2001
+From: hackermdch <58121864+hackermdch@users.noreply.github.com>
+Date: Wed, 18 Sep 2024 01:19:40 +0800
+Subject: [PATCH] Update
+
+---
+ runtime/vm/native_symbol_win.cc | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/runtime/vm/native_symbol_win.cc b/runtime/vm/native_symbol_win.cc
+index 4541937f449..1159132d842 100644
+--- a/runtime/vm/native_symbol_win.cc
++++ b/runtime/vm/native_symbol_win.cc
+@@ -16,6 +16,7 @@ namespace dart {
+ 
+ static bool running_ = false;
+ static Mutex* lock_ = nullptr;
++static HANDLE handle_ = nullptr;
+ 
+ void NativeSymbolResolver::Init() {
+   ASSERT(running_ == false);
+@@ -28,13 +29,14 @@ void NativeSymbolResolver::Init() {
+ // when compiled in UWP.
+ #ifndef DART_TARGET_OS_WINDOWS_UWP
+   SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
+-  HANDLE hProcess = GetCurrentProcess();
+-  if (!SymInitialize(hProcess, nullptr, TRUE)) {
++  DuplicateHandle(GetCurrentProcess(), GetCurrentProcess(), GetCurrentProcess(),
++                  &handle_, 0, false, DUPLICATE_SAME_ACCESS);
++
++  if (!SymInitialize(handle_, nullptr, TRUE)) {
+     DWORD error = GetLastError();
+     OS::PrintErr("Failed to init NativeSymbolResolver (SymInitialize %" Pu32
+                  ")\n",
+                  error);
+-    return;
+   }
+ #endif
+ }
+@@ -46,13 +48,13 @@ void NativeSymbolResolver::Cleanup() {
+   }
+   running_ = false;
+ #ifndef DART_TARGET_OS_WINDOWS_UWP
+-  HANDLE hProcess = GetCurrentProcess();
+-  if (!SymCleanup(hProcess)) {
++  if (!SymCleanup(handle_)) {
+     DWORD error = GetLastError();
+     OS::PrintErr("Failed to shutdown NativeSymbolResolver (SymCleanup  %" Pu32
+                  ")\n",
+                  error);
+   }
++  CloseHandle(handle_);
+ #endif
+ }
+ 
+@@ -72,13 +74,12 @@ const char* NativeSymbolResolver::LookupSymbolName(uword pc, uword* start) {
+     *start = 0;
+   }
+   memset(&buffer[0], 0, sizeof(buffer));
+-  HANDLE hProcess = GetCurrentProcess();
+   DWORD64 address = static_cast<DWORD64>(pc);
+   PSYMBOL_INFO pSymbol = reinterpret_cast<PSYMBOL_INFO>(&buffer[0]);
+   pSymbol->SizeOfStruct = kSymbolInfoSize;
+   pSymbol->MaxNameLen = kMaxNameLength;
+   DWORD64 displacement;
+-  BOOL r = SymFromAddr(hProcess, address, &displacement, pSymbol);
++  BOOL r = SymFromAddr(handle_, address, &displacement, pSymbol);
+   if (r == FALSE) {
+     return nullptr;
+   }
+-- 
+2.41.0.windows.1
+

@@ -1,0 +1,26 @@
+From 2914ed92e81a19f17f6db3d67697acfaf51185d6 Mon Sep 17 00:00:00 2001
+From: hackermdch <58121864+hackermdch@users.noreply.github.com>
+Date: Sun, 22 Sep 2024 10:03:07 +0800
+Subject: [PATCH] Update
+
+---
+ shell/platform/minecraft/text_input_plugin.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/shell/platform/minecraft/text_input_plugin.cc b/shell/platform/minecraft/text_input_plugin.cc
+index 4a8af55d1c..e0d1f692ea 100644
+--- a/shell/platform/minecraft/text_input_plugin.cc
++++ b/shell/platform/minecraft/text_input_plugin.cc
+@@ -202,8 +202,8 @@ void TextInputPlugin::SendStateUpdate(const TextInputModel& model) {
+   editing_state.AddMember(kComposingExtentKey, -1, allocator);
+   editing_state.AddMember(kSelectionAffinityKey, kAffinityDownstream,
+                           allocator);
+-  editing_state.AddMember(kSelectionBaseKey, selection.base(), allocator);
+-  editing_state.AddMember(kSelectionExtentKey, selection.extent(), allocator);
++  editing_state.AddMember(kSelectionBaseKey, (uint64_t)selection.base(), allocator);
++  editing_state.AddMember(kSelectionExtentKey, (uint64_t)selection.extent(), allocator);
+   editing_state.AddMember(kSelectionIsDirectionalKey, false, allocator);
+   editing_state.AddMember(
+       kTextKey, rapidjson::Value(model.GetText(), allocator).Move(), allocator);
+-- 
+2.41.0.windows.1
