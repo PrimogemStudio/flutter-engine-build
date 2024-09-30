@@ -33,20 +33,6 @@ jobs:
               ninja -C out/host_release -j8
               cp ./out/host_release/libflutter_minecraft.so ../libflutter_minecraft.so
 
-          - os: macos-14
-            name: MacOS
-            cmd: |
-              git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git --depth 1
-              export PATH=$(pwd)/depot_tools:$PATH
-              gclient sync --no-history
-              cd src
-              cd flutter
-              git apply ../../0002-Update.patch
-              cd ..
-              ./flutter/tools/gn --runtime-mode release --no-enable-unittests --disable-desktop-embeddings --enable-vulkan
-              ninja -C out/host_release -j8
-              cp ./out/host_release/libflutter_minecraft.dylib ../libflutter_minecraft.dylib
-
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -72,10 +58,3 @@ jobs:
         with:
           name: libs
           path: ./flutter_minecraft.dll
-
-      - name: Upload Artifacts (MacOS)
-        uses: actions/upload-artifact@v3
-        if: matrix.os == 'macos-14'
-        with:
-          name: libs
-          path: ./libflutter_minecraft.dylib
